@@ -14,5 +14,5 @@ try {
 } catch (PDOException $e) {
     die('Error en línea '.$e->getMessage());
 }
-
+//
  ?>
