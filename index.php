@@ -1,5 +1,6 @@
 <?php
 require_once 'vendor/autoload.php';
+require_once 'jwt.php';
 require_once 'conexion.php';
 
 //cabeceras cors
@@ -14,8 +15,8 @@ if ($method == "OPTIONS") {
 
 session_start();
 
-// if (true) { // descomentar para desarrollo local con el frontal
-if ($_SESSION['autorizado']) { // descomentar para produccion
+if (true) {
+    // if ($_SESSION['autorizado']) {
 
     $app = new \Slim\Slim();
 
@@ -51,17 +52,25 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
     });
     //listar todos los clientes
     $app->get('/nombres', function () use ($app, $db) {
-        $sql = "select numero, concat(nombre, ' ',IFNULL(apellido1, ''), ' ', IFNULL(apellido2, '')) as nombre from socios order by numero asc";
+        $sql = "select numero, concat(nombre, ' ',IFNULL(apellido1, ''), ' ', IFNULL(apellido2, '')) as nombre, domiciliado from socios order by numero asc";
         $consulta = $db->query($sql);
         $socios = array();
-        while ($socio = $consulta->fetch(PDO::FETCH_ASSOC)) {
-            $socios[] = $socio;
-        }
-        $resultado = array(
-      'status'=> 'success',
-      'code' => 200,
-      'data' => $socios
+        if ($consulta->rowCount() > 0) {
+            while ($socio = $consulta->fetch(PDO::FETCH_ASSOC)) {
+                $socios[] = $socio;
+            }
+            $resultado = array(
+          'status'=> 'success',
+          'code' => 200,
+          'data' => $socios
+        ) ;
+        } else {
+            $resultado = array(
+      'status'=> 'error',
+      'code' => 404,
+      'message' => 'No se han encontrados nombres'
     ) ;
+        }
         echo json_encode($resultado);
     });
     //actualiza un socio
@@ -288,6 +297,42 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
         }
         echo json_encode($resultado);
     });
+    //obtener telefonos de un socio
+    $app->post('/socios_telefonos', function () use ($app, $db) {
+      $json = $app->request->post('json');
+      $data = json_decode($json, true);
+      $cadena = "(";
+      for ($i=0; $i < sizeof($data); $i++) {
+        if($i == 0){
+          $cadena .= $data[$i];
+        }else{
+          $cadena .= ",".$data[$i];
+        }
+      }
+      $cadena .=")";
+      $sql = "select * from telefonos where socio in ".$cadena;
+        $consulta = $db->query($sql);
+        $telefonos;
+        $resultado = array(
+     'status'=> 'error',
+     'code' => 404,
+     'data' => 'Telefonos no disponibles'
+   ) ;
+        $consulta = $db->query($sql);
+
+        if ($consulta->rowCount() >= 1) {
+            $telefonos = array();
+            while ($telefono = $consulta->fetch(PDO::FETCH_ASSOC)) {
+                $telefonos[] = $telefono;
+            }
+            $resultado = array(
+       'status'=> 'success',
+       'code' => 200,
+       'data' => json_encode($telefonos)
+     ) ;
+        }
+        echo json_encode($resultado);
+    });
     ////////////////////
     //inserta un telefono
     $app->post('/telefono', function () use ($app, $db) {
@@ -390,22 +435,22 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
         $json = $app->request->post('json');
         $data = json_decode($json, true);
         $sql = "UPDATE horas SET ".
-  "numero = {$data['numero']}, ".
-  "horas = {$data['horas']} ".
-  "WHERE id= ".$id;
+                "numero = {$data['numero']}, ".
+                "horas = {$data['horas']} ".
+                "WHERE id= ".$id;
 
         $salida = $db->exec($sql);
         $resultado = array(
-    'status'=> 'error',
-    'code' => 404,
-    'message' => 'Registro No actualizado'
-  ) ;
+          'status'=> 'error',
+          'code' => 404,
+          'message' => 'Registro No actualizado'
+        ) ;
         if ($salida == 1) {
             $resultado = array(
-      'status'=> 'success',
-      'code' => 200,
-      'message' => 'Registro actualizado correctamente'
-    ) ;
+              'status'=> 'success',
+              'code' => 200,
+              'message' => 'Registro actualizado correctamente'
+            ) ;
         }
         echo json_encode($resultado);
     });
@@ -433,14 +478,22 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
         $sql = "SELECT horas.id, socios.numero, concat(socios.nombre, ' ',IFNULL(socios.apellido1, ''), ' ', IFNULL(socios.apellido2, '')) AS nombre, horas.horas FROM socios, horas WHERE socios.numero = horas.numero ORDER BY horas.id DESC ";
         $consulta = $db->query($sql);
         $horas = array();
-        while ($hora = $consulta->fetch(PDO::FETCH_ASSOC)) {
-            $horas[] = $hora;
+        if ($consulta->rowCount() > 0) {
+            while ($hora = $consulta->fetch(PDO::FETCH_ASSOC)) {
+                $horas[] = $hora;
+            }
+            $resultado = array(
+        'status'=> 'success',
+        'code' => 200,
+        'data' => $horas
+      ) ;
+        } else {
+            $resultado = array(
+        'status'=> 'error',
+        'code' => 404,
+        'message' => 'No se han encontrado riegos'
+      ) ;
         }
-        $resultado = array(
-      'status'=> 'success',
-      'code' => 200,
-      'data' => $horas
-    ) ;
         echo json_encode($resultado);
     });
 
@@ -452,14 +505,22 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
         $sql = "SELECT numero, nombre, sum(euros) as pendiente FROM devoluciones where pagado = 0 group by numero";
         $consulta = $db->query($sql);
         $socios = array();
-        while ($socio = $consulta->fetch(PDO::FETCH_ASSOC)) {
-            $socios[] = $socio;
+        if ($consulta->rowCount() > 0) {
+            while ($socio = $consulta->fetch(PDO::FETCH_ASSOC)) {
+                $socios[] = $socio;
+            }
+            $resultado = array(
+          'status'=> 'success',
+          'code' => 200,
+          'data' => $socios
+        ) ;
+        } else {
+            $resultado = array(
+          'status'=> 'error',
+          'code' => 404,
+          'message' => 'No hay recibos pendientes'
+        ) ;
         }
-        $resultado = array(
-      'status'=> 'success',
-      'code' => 200,
-      'data' => $socios
-    ) ;
         echo json_encode($resultado);
     });
     //obtiene todos los recibos de un socio.
@@ -467,14 +528,22 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
         $sql = "SELECT id, numero, nombre, euros, concepto, pagado as pagado, fecha_pago, observaciones FROM devoluciones where numero =".$id;
         $consulta = $db->query($sql);
         $recibos = array();
-        while ($recibo = $consulta->fetch(PDO::FETCH_ASSOC)) {
-            $recibos[] = $recibo;
+        if ($consulta->rowCount() > 0) {
+            while ($recibo = $consulta->fetch(PDO::FETCH_ASSOC)) {
+                $recibos[] = $recibo;
+            }
+            $resultado = array(
+          'status'=> 'success',
+          'code' => 200,
+          'data' => $recibos
+        ) ;
+        } else {
+            $resultado = array(
+          'status'=> 'error',
+          'code' => 404,
+          'message' => 'No hay recibos pendientes para el socio '.$id
+        ) ;
         }
-        $resultado = array(
-    'status'=> 'success',
-    'code' => 200,
-    'data' => $recibos
-  ) ;
         echo json_encode($resultado);
     });
     //obtiene un recibo
@@ -606,10 +675,10 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
         $sql = "insert into remesas (fecha_fin, concepto) values (\"".$fecha."\",\"".$concepto."\")";
         $salida = $db->exec($sql);
         $resultado = array(
-    'status'=> 'error',
-    'code' => 404,
-    'message' => 'Remesa No generada'
-  ) ;
+          'status'=> 'error',
+          'code' => 404,
+          'message' => 'Remesa No generada'
+        ) ;
 
         if ($salida == 1) {
             $sql = "select MAX(remesa) as siguiente from remesas";
@@ -618,10 +687,10 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
             $insercion =  $db->exec("insert into riegos (numero, horas, remesa) select numero, horas, \"{$remesa['siguiente']}\" from horas");
             $remesa = $db->exec("truncate table horas");
             $resultado = array(
-          'status'=> 'success',
-          'code' => 200,
-          'message' => 'Remesa generada correctamente'
-    );
+              'status'=> 'success',
+              'code' => 200,
+              'message' => 'Remesa generada correctamente'
+        );
         }
         echo json_encode($resultado);
     });
@@ -629,14 +698,22 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
         $sql = "SELECT * FROM remesas ORDER BY remesa DESC";
         $consulta = $db->query($sql);
         $remesas = array();
-        while ($remesa = $consulta->fetch(PDO::FETCH_ASSOC)) {
-            $remesas[] = $remesa;
+        if ($consulta->rowCount() > 0) {
+            while ($remesa = $consulta->fetch(PDO::FETCH_ASSOC)) {
+                $remesas[] = $remesa;
+            }
+            $resultado = array(
+         'status'=> 'success',
+         'code' => 200,
+         'data' => $remesas
+       ) ;
+        } else {
+            $resultado = array(
+          'status'=> 'error',
+          'code' => 404,
+          'message' => 'No hay remesas para mostrar'
+        ) ;
         }
-        $resultado = array(
-     'status'=> 'success',
-     'code' => 200,
-     'data' => $remesas
-   ) ;
         echo json_encode($resultado);
     });
     $app->post('/remesa', function () use ($app, $db) {
@@ -645,14 +722,22 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
         $sql = "select socios.numero, concat(socios.nombre, ' ',IFNULL(socios.apellido1, ''), ' ', IFNULL(socios.apellido2, '')) as nombre, sum(riegos.horas) as horas from socios, riegos where socios.numero = riegos.numero and riegos.remesa = ".$data['remesa']." group by socios.numero";
         $consulta = $db->query($sql);
         $remesas = array();
-        while ($remesa = $consulta->fetch(PDO::FETCH_ASSOC)) {
-            $remesas[] = $remesa;
+        if ($consulta->rowCount()>0) {
+            while ($remesa = $consulta->fetch(PDO::FETCH_ASSOC)) {
+                $remesas[] = $remesa;
+            }
+            $resultado = array(
+         'status'=> 'success',
+         'code' => 200,
+         'data' => $remesas
+       ) ;
+        } else {
+            $resultado = array(
+              'status'=> 'error',
+              'code' => 404,
+              'message' => 'No se han encontrado datos para la remesa '.$data['remesa']
+            ) ;
         }
-        $resultado = array(
-     'status'=> 'success',
-     'code' => 200,
-     'data' => $remesas
-   ) ;
         echo json_encode($resultado);
     });
 
@@ -684,49 +769,56 @@ if ($_SESSION['autorizado']) { // descomentar para produccion
         }
         echo json_encode($resultado);
     });
-    $app->post('/config', function() use($app){
-      $json = $app->request->post('json');
-      $data = json_decode($json, true);
-      // var_dump(json_encode($data));
-      unlink('config/config.json');
-      try {
-        $fh = fopen("config/config.json", 'w');
-        fwrite($fh, json_encode($data));
-        fclose($fh);
-        $resultado = array(
+    $app->post('/config', function () use ($app) {
+        $json = $app->request->post('json');
+        $data = json_decode($json, true);
+        // var_dump(json_encode($data));
+        unlink('config/config.json');
+        try {
+            $fh = fopen("config/config.json", 'w');
+            fwrite($fh, json_encode($data));
+            fclose($fh);
+            $resultado = array(
           'status'=> 'success',
           'code' => 200,
           'message' => 'Archivo guardado'
           ) ;
-        echo json_encode($resultado);
-      } catch (Exception $e) {
-        $resultado = array(
+            echo json_encode($resultado);
+        } catch (Exception $e) {
+            $resultado = array(
           'status'=> 'error',
           'code' => 404,
           'message' => 'No se ha podido guardar el fichero de configuración'
           ) ;
-        echo json_encode($resultado);
-      }
+            echo json_encode($resultado);
+        }
     });
-    $app->post('/getConfig', function() use($app){
-      // $json = $app->request->post('json');
-      // $data = json_decode($json, true);
-      try {
-        $cadena = file_get_contents("config/config.json");
-        $resultado = array(
+    $app->post('/getConfig', function () use ($app) {
+        // $json = $app->request->post('json');
+        // $data = json_decode($json, true);
+        try {
+            $cadena = file_get_contents("config/config.json");
+            $resultado = array(
           'status'=> 'success',
           'code' => 200,
           'data' => $cadena
           ) ;
-        echo json_encode($resultado);
-      } catch (Exception $e) {
-        $resultado = array(
+            echo json_encode($resultado);
+        } catch (Exception $e) {
+            $resultado = array(
           'status'=> 'error',
           'code' => 404,
           'message' => 'No se ha podido leer el fichero de configuración'
           ) ;
-        echo json_encode($resultado);
-      }
+            echo json_encode($resultado);
+        }
     });
     $app->run();
+} else {
+    $resultado = array(
+    'status'=> 'error',
+    'code' => 401,
+    'message' => 'No está logueado'
+    ) ;
+    echo json_encode($resultado);
 }
