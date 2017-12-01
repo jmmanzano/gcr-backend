@@ -175,17 +175,17 @@ if (true) {
         $consulta = $db->query($sql);
         $socio;
         $resultado = array(
-     'status'=> 'error',
-     'code' => 404,
-     'data' => 'Socio no disponible'
-   ) ;
+           'status'=> 'error',
+           'code' => 404,
+           'message' => 'Socio no disponible'
+         ) ;
         if ($consulta->rowCount() == 1) {
             $socio = $consulta->fetch(PDO::FETCH_ASSOC);
             $resultado = array(
-       'status'=> 'success',
-       'code' => 200,
-       'data' => json_encode($socio)
-     ) ;
+             'status'=> 'success',
+             'code' => 200,
+             'data' => json_encode($socio)
+           ) ;
         }
         echo json_encode($resultado);
     });
@@ -235,17 +235,17 @@ if (true) {
         $consulta = $db->query($sql);
         $provincia;
         $resultado = array(
-     'status'=> 'error',
-     'code' => 404,
-     'data' => 'Provincia no disponible'
-   ) ;
+           'status'=> 'error',
+           'code' => 404,
+           'message' => 'Provincia no disponible'
+         ) ;
         if ($consulta->rowCount() == 1) {
             $provincia = $consulta->fetch(PDO::FETCH_ASSOC);
             $resultado = array(
-       'status'=> 'success',
-       'code' => 200,
-       'data' => json_encode($provincia)
-     ) ;
+             'status'=> 'success',
+             'code' => 200,
+             'data' => json_encode($provincia)
+           ) ;
         }
         echo json_encode($resultado);
     });
@@ -255,20 +255,20 @@ if (true) {
         $consulta = $db->query($sql);
         $localidad;
         $resultado = array(
-     'status'=> 'error',
-     'code' => 404,
-     'data' => 'Localidad no disponible'
-   ) ;
+           'status'=> 'error',
+           'code' => 404,
+           'message' => 'Localidad no disponible'
+         ) ;
         if ($consulta->rowCount() >= 1) {
             $localidades = array();
             while ($localidad = $consulta->fetch(PDO::FETCH_ASSOC)) {
                 $localidades[] = $localidad;
             }
             $resultado = array(
-       'status'=> 'success',
-       'code' => 200,
-       'data' => json_encode($localidades)
-     ) ;
+               'status'=> 'success',
+               'code' => 200,
+               'data' => json_encode($localidades)
+             ) ;
         }
         echo json_encode($resultado);
     });
@@ -278,10 +278,10 @@ if (true) {
         $consulta = $db->query($sql);
         $telefonos;
         $resultado = array(
-     'status'=> 'error',
-     'code' => 404,
-     'data' => 'telefonos no disponibles'
-   ) ;
+           'status'=> 'error',
+           'code' => 404,
+           'message' => 'Telefonos no disponibles'
+         ) ;
         $consulta = $db->query($sql);
 
         if ($consulta->rowCount() >= 1) {
@@ -290,10 +290,10 @@ if (true) {
                 $telefonos[] = $telefono;
             }
             $resultado = array(
-       'status'=> 'success',
-       'code' => 200,
-       'data' => json_encode($telefonos)
-     ) ;
+             'status'=> 'success',
+             'code' => 200,
+             'data' => json_encode($telefonos)
+           ) ;
         }
         echo json_encode($resultado);
     });
