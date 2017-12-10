@@ -1,6 +1,7 @@
 <?php
 require_once 'vendor/autoload.php';
 require_once 'conexion.php';
+//inicializamos el framework
 $app = new \Slim\Slim();
 
 //cabeceras cors
@@ -12,8 +13,13 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method == "OPTIONS") {
     die();
 }
+//iniciamos la sesión.
 session_start();
-
+/**
+ * Función que se encarga de hacer login.
+ * Si el login el correcto se graba en la sesión el parámetro autorizado a true
+ * @var [type]
+ */
 $app->post('/login', function () use ($app, $db) {
     $_SESSION['autorizado'] = false;
     $json = $app->request->post('json');
@@ -48,7 +54,11 @@ $app->post('/login', function () use ($app, $db) {
     }
     echo json_encode($resultado);
 });
-
+/**
+ * Función encargada de deslogar al usuario.
+ * pasa el parámetro de sesión autorizado a false
+ * @var [type]
+ */
 $app->post('/signout', function () use ($app) {
     $_SESSION['autorizado'] = false;
     $resultado = array(
@@ -58,6 +68,10 @@ $app->post('/signout', function () use ($app) {
 ) ;
     echo json_encode($resultado);
 });
+/**
+ * Función que comprueba si estamos logueados o no.
+ * @var [type]
+ */
 $app->post('/status', function () use ($app) {
     $json = $app->request->post('json');
     $data = json_decode($json, true);
@@ -76,6 +90,10 @@ $app->post('/status', function () use ($app) {
     }
     echo json_encode($resultado);
 });
+/**
+ * Función que da de alta a un nuevo usuario.
+ * @var [type]
+ */
 $app->post('/signup', function () use ($app, $db) {
     $_SESSION['autorizado'] = false;
     $json = $app->request->post('json');
@@ -115,6 +133,10 @@ $app->post('/signup', function () use ($app, $db) {
     }
     echo json_encode($resultado);
 });
+/**
+ * Función que actualiza la información de un usuario.
+ * @var [type]
+ */
 $app->post('/update', function () use ($app, $db) {
     $_SESSION['autorizado'] = false;
     $json = $app->request->post('json');

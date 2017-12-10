@@ -1,6 +1,5 @@
 <?php
 require_once 'vendor/autoload.php';
-require_once 'jwt.php';
 require_once 'conexion.php';
 
 //cabeceras cors
@@ -12,15 +11,18 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method == "OPTIONS") {
     die();
 }
-
+// Iniciamos la sesión
 session_start();
 
 if (true) {
     // if ($_SESSION['autorizado']) {
-
+    // inicializamos el framework
     $app = new \Slim\Slim();
 
-    //listar todos bases de datos
+    /**
+     * Función que devuelve todas las bases de datos del servidor.
+     * @var [type]
+     */
     $app->get('/db', function () use ($app, $dbnames) {
         $sql = "SHOW DATABASES";
         $consulta = $dbnames->query($sql);
@@ -35,7 +37,10 @@ if (true) {
    ) ;
         echo json_encode($resultado);
     });
-    //listar todos los clientes
+    /**
+     * Función que lista todos los datos de todos los socios de la tabla socios.
+     * @var [type]
+     */
     $app->get('/socios', function () use ($app, $db) {
         $sql = "select * from socios order by numero";
         $consulta = $db->query($sql);
@@ -50,7 +55,10 @@ if (true) {
    ) ;
         echo json_encode($resultado);
     });
-    //listar todos los clientes
+    /**
+     * Función que lista todos los nombres de los usuarios de la tabla socios
+     * @var [type]
+     */
     $app->get('/nombres', function () use ($app, $db) {
         $sql = "select numero, concat(nombre, ' ',IFNULL(apellido1, ''), ' ', IFNULL(apellido2, '')) as nombre, domiciliado from socios order by numero asc";
         $consulta = $db->query($sql);
@@ -73,7 +81,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //actualiza un socio
+    /**
+     * Función que actualiza los datos de un socio.
+     * @var [type]
+     */
     $app->post('/socio-actualiza', function () use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -122,6 +133,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
+    /**
+     * Función que inserta un nuevo socio en la base de datos.
+     * @var [type]
+     */
     $app->post('/socio-inserta', function () use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -169,7 +184,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //obtener un solo cliente
+    /**
+     * Función que obtiene todos los datos de un socio por su número de socio
+     * @var [type]
+     */
     $app->get('/socio/:id', function ($id) use ($app, $db) {
         $sql = "select * from socios where numero = ".$id;
         $consulta = $db->query($sql);
@@ -189,7 +207,11 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //obtener ultimo socio
+    /**
+     * Función que devuelve el valor del número de socio siguiente para
+     * generar una nueva entrada
+     * @var [type]
+     */
     $app->get('/socio-sig', function () use ($app, $db) {
         $sql = "select max(numero) + 1 as siguiente  from socios ";
         $consulta = $db->query($sql);
@@ -197,7 +219,7 @@ if (true) {
         $resultado = array(
      'status'=> 'error',
      'code' => 404,
-     'data' => 'Socio no disponible'
+     'message' => 'Socio no disponible'
    ) ;
         if ($consulta->rowCount() == 1) {
             $socio = $consulta->fetch(PDO::FETCH_ASSOC);
@@ -209,7 +231,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //obtener nombre de un socio
+    /**
+     * Función que obtiene el nombre de un socio por su id.
+     * @var [type]
+     */
     $app->get('/socio_nombre/:id', function ($id) use ($app, $db) {
         $sql = "select concat(nombre, ' ',IFNULL(apellido1, ''), ' ', IFNULL(apellido2, '')) as nombre from socios where numero = ".$id;
         $consulta = $db->query($sql);
@@ -217,7 +242,7 @@ if (true) {
         $resultado = array(
      'status'=> 'error',
      'code' => 404,
-     'data' => 'Socio no disponible'
+     'message' => 'Socio no disponible'
    ) ;
         if ($consulta->rowCount() == 1) {
             $socio = $consulta->fetch(PDO::FETCH_ASSOC);
@@ -229,7 +254,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //obtener provincia
+    /**
+     * función que obtiene los datos de una provincia por su id.
+     * @var [type]
+     */
     $app->get('/provincia/:id', function ($id) use ($app, $db) {
         $sql = "select * from provincias where cod_prov = '".$id."'";
         $consulta = $db->query($sql);
@@ -249,7 +277,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //obtener localidad
+    /**
+     * Función que devuelve un array de localidades en función de su código postal.
+     * @var [type]
+     */
     $app->get('/localidad/:id', function ($id) use ($app, $db) {
         $sql = "select * from poblaciones where cod_postal = ".$id;
         $consulta = $db->query($sql);
@@ -272,7 +303,38 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //obtener telefonos de un socio
+    /**
+     * Función que obtiene las parcelas de un socio por su id.
+     * @var [type]
+     */
+    $app->get('/socio_parcelas/:id', function ($id) use ($app, $db) {
+        $sql = "select * from parcelas where socio = ".$id;
+        $consulta = $db->query($sql);
+        $parcelas;
+        $resultado = array(
+           'status'=> 'error',
+           'code' => 404,
+           'message' => 'Parcelas no disponibles'
+         ) ;
+        $consulta = $db->query($sql);
+
+        if ($consulta->rowCount() >= 1) {
+            $parcelas = array();
+            while ($parcela = $consulta->fetch(PDO::FETCH_ASSOC)) {
+                $parcelas[] = $parcela;
+            }
+            $resultado = array(
+             'status'=> 'success',
+             'code' => 200,
+             'data' => json_encode($parcelas)
+           ) ;
+        }
+        echo json_encode($resultado);
+    });
+    /**
+     * Función que obtiene los teléfonos de un socio por su id.
+     * @var [type]
+     */
     $app->get('/socio_telefonos/:id', function ($id) use ($app, $db) {
         $sql = "select * from telefonos where socio = ".$id;
         $consulta = $db->query($sql);
@@ -297,26 +359,29 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //obtener telefonos de un socio
+    /**
+     * Función que obtiene los teléfonos de los socios pasados por post.
+     * @var [type]
+     */
     $app->post('/socios_telefonos', function () use ($app, $db) {
-      $json = $app->request->post('json');
-      $data = json_decode($json, true);
-      $cadena = "(";
-      for ($i=0; $i < sizeof($data); $i++) {
-        if($i == 0){
-          $cadena .= $data[$i];
-        }else{
-          $cadena .= ",".$data[$i];
+        $json = $app->request->post('json');
+        $data = json_decode($json, true);
+        $cadena = "(";
+        for ($i=0; $i < sizeof($data); $i++) {
+            if ($i == 0) {
+                $cadena .= $data[$i];
+            } else {
+                $cadena .= ",".$data[$i];
+            }
         }
-      }
-      $cadena .=")";
-      $sql = "select * from telefonos where socio in ".$cadena;
+        $cadena .=")";
+        $sql = "select * from telefonos where socio in ".$cadena;
         $consulta = $db->query($sql);
         $telefonos;
         $resultado = array(
      'status'=> 'error',
      'code' => 404,
-     'data' => 'Telefonos no disponibles'
+     'message' => 'Telefonos no disponibles'
    ) ;
         $consulta = $db->query($sql);
 
@@ -333,8 +398,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    ////////////////////
-    //inserta un telefono
+    /**
+     * Función que inserta un nuevo teléfono.
+     * @var [type]
+     */
     $app->post('/telefono', function () use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -360,8 +427,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    ////////////////////
-    //actualiza un telefono
+    /**
+     * Función que actualiza los datos de un teléfono por su id.
+     * @var [type]
+     */
     $app->post('/telefono-actualiza/:id', function () use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -383,12 +452,15 @@ if (true) {
             $resultado = array(
       'status'=> 'success',
       'code' => 200,
-      'message' => 'Registro insertado correctamente'
+      'message' => 'Registro actualizado correctamente'
     ) ;
         }
         echo json_encode($resultado);
     });
-    // borra un telefono
+    /**
+     * Función que borra un teléfono por su id.
+     * @var [type]
+     */
     $app->post('/telefono-borra/:id', function ($id) use ($app, $db) {
         $sql = "DELETE FROM telefonos WHERE id= ".$id;
         $salida = $db->exec($sql);
@@ -407,8 +479,10 @@ if (true) {
         echo json_encode($resultado);
     });
 
-    ////////////////////
-    //inserta un riego
+    /**
+     * Función que inserta una petición en la tabla horas.
+     * @var [type]
+     */
     $app->post('/hora', function () use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -430,7 +504,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //actualizar un riego
+    /**
+     * Función que actualiza una petición por su id.
+     * @var [type]
+     */
     $app->post('/actualiza-hora/:id', function ($id) use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -454,7 +531,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    // borra un riego
+    /**
+     * Función que borra una petición por su id.
+     * @var [type]
+     */
     $app->post('/borra-hora/:id', function ($id) use ($app, $db) {
         $sql = "DELETE FROM horas WHERE id= ".$id;
 
@@ -473,7 +553,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //listar todos los riegos
+    /**
+     * Función que recupera todas las peticiones.
+     * @var [type]
+     */
     $app->get('/horas', function () use ($app, $db) {
         $sql = "SELECT horas.id, socios.numero, concat(socios.nombre, ' ',IFNULL(socios.apellido1, ''), ' ', IFNULL(socios.apellido2, '')) AS nombre, horas.horas FROM socios, horas WHERE socios.numero = horas.numero ORDER BY horas.id DESC ";
         $consulta = $db->query($sql);
@@ -497,10 +580,10 @@ if (true) {
         echo json_encode($resultado);
     });
 
-    ////////////////////////////////////////////////////////////
-    //aquí la parte de los recibos
-    ///////////////////////////////////////////////////////////
-    //obtiene el nombre de los socios con recibos pendientes.
+    /**
+     * Función que devuelve los nombres de los socios con recibos pendientes
+     * @var [type]
+     */
     $app->get('/socios-pendientes', function () use ($app, $db) {
         $sql = "SELECT numero, nombre, sum(euros) as pendiente FROM devoluciones where pagado = 0 group by numero";
         $consulta = $db->query($sql);
@@ -523,7 +606,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //obtiene todos los recibos de un socio.
+    /**
+     * Función que devuelve todos los recibos de un socio por su numero de socio.
+     * @var [type]
+     */
     $app->post('/socios-pendientes/:id', function ($id) use ($app, $db) {
         $sql = "SELECT id, numero, nombre, euros, concepto, pagado as pagado, fecha_pago, observaciones FROM devoluciones where numero =".$id;
         $consulta = $db->query($sql);
@@ -546,7 +632,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //obtiene un recibo
+    /**
+     * Función que obtiene los datos de un recibo por su id.
+     * @var [type]
+     */
     $app->post('/recibo', function () use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -569,7 +658,10 @@ if (true) {
         echo json_encode($resultado);
     });
 
-    //obtener la cantidad pendiente  de un socio
+    /**
+     * Función que obtiene la cantidad pendiente de pago de un socio por su numero de socio.
+     * @var [type]
+     */
     $app->get('/cantidad-pendiente/:id', function ($id) use ($app, $db) {
         $sql = "select sum(euros) as pendiente from devoluciones where numero = ".$id." and pagado = 0";
         $consulta = $db->query($sql);
@@ -577,7 +669,7 @@ if (true) {
         $resultado = array(
      'status'=> 'error',
      'code' => 404,
-     'data' => 'Cantidad no disponible'
+     'message' => 'Cantidad no disponible'
    ) ;
         if ($consulta->rowCount() == 1) {
             $cantidad = $consulta->fetch(PDO::FETCH_ASSOC);
@@ -589,7 +681,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //inserta un recibo
+    /**
+     * Función que inserta un nuevo recibo impagado.
+     * @var [type]
+     */
     $app->post('/inserta-recibo', function () use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -625,8 +720,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //actualiza un recibo
-    //tengo que pasar varios datos por parámetro
+    /**
+     * Función que actualiza la información de un recibo.
+     * @var [type]
+     */
     $app->post('/actualiza-recibo', function () use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -665,10 +762,14 @@ if (true) {
         }
         echo json_encode($resultado);
     });
-    //REMESAS
+    /**
+     * Función que genera una nueva remesa.
+     * Primero genera la entrada en la tabla remesas, y luego vuelca en la tabla
+     * riegos los datos de la tabla horas, truncando esta.
+     * @var [type]
+     */
     $app->post('/genera-remesa', function () use ($app, $db) {
         $json = $app->request->post('json');
-        //var_dump($json);
         $data = json_decode($json, true);
         $fecha = $data['fecha_fin'];
         $concepto = $data['concepto'];
@@ -694,6 +795,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
+    /**
+     * Función que devuelve un array con la información de todas las remesas.
+     * @var [type]
+     */
     $app->post('/remesas', function () use ($app, $db) {
         $sql = "SELECT * FROM remesas ORDER BY remesa DESC";
         $consulta = $db->query($sql);
@@ -716,6 +821,10 @@ if (true) {
         }
         echo json_encode($resultado);
     });
+    /**
+     * Función que devuelve la información completa de una remesa determinada.
+     * @var [type]
+     */
     $app->post('/remesa', function () use ($app, $db) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
@@ -741,14 +850,20 @@ if (true) {
         echo json_encode($resultado);
     });
 
-    //Esta parte se encarga de enviar un sms
+    /**
+     * función que se encarga de enviar SMS a través del programa sms gateway
+     * de android.
+     * Lee los datos de configuración contenidos en config/config.json
+     * y con curl hace una llamada al servidor de sms del teléfono.
+     * @var [type]
+     */
     $app->post('/sms', function () use ($app) {
         $configFile = file_get_contents("config/config.json");
         $config = json_decode($configFile, true);
         $json = $app->request->post('json');
         $data = json_decode($json, true);
         $ch = curl_init();
-        $url = 'http://'.$config['ipTelefono'].':'.$config['puertoTelefono'].'/sendsms?phone=+34'.$data['telefono'].'&text='.$config['nombre'].' '.urlencode($data['texto']);
+        $url = 'http://'.$config['ipTelefono'].':'.$config['puertoTelefono'].'/sendsms?phone=+34'.$data['telefono'].'&text='.urlencode($config['nombre'].' '.$data['texto']);
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HEADER, true);
         curl_setopt($ch, CURLOPT_NOBODY, true);
@@ -769,10 +884,13 @@ if (true) {
         }
         echo json_encode($resultado);
     });
+    /**
+     * Función que guarda el fichero de configuración config.json.
+     * @var [type]
+     */
     $app->post('/config', function () use ($app) {
         $json = $app->request->post('json');
         $data = json_decode($json, true);
-        // var_dump(json_encode($data));
         unlink('config/config.json');
         try {
             $fh = fopen("config/config.json", 'w');
@@ -793,9 +911,11 @@ if (true) {
             echo json_encode($resultado);
         }
     });
+    /**
+     * Función que devuelve los datos contenidos en el fichero de configuración.
+     * @var [type]
+     */
     $app->post('/getConfig', function () use ($app) {
-        // $json = $app->request->post('json');
-        // $data = json_decode($json, true);
         try {
             $cadena = file_get_contents("config/config.json");
             $resultado = array(
@@ -814,7 +934,7 @@ if (true) {
         }
     });
     $app->run();
-} else {
+} else { //mensaje que debe de aparecer si no se está logueado.
     $resultado = array(
     'status'=> 'error',
     'code' => 401,
