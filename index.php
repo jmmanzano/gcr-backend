@@ -14,8 +14,8 @@ if ($method == "OPTIONS") {
 // Iniciamos la sesión
 session_start();
 
-if (true) {
-    // if ($_SESSION['autorizado']) {
+// if (true) {
+    if ($_SESSION['autorizado']) {
     // inicializamos el framework
     $app = new \Slim\Slim();
 
