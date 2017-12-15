@@ -116,7 +116,7 @@ $app->post('/signup', function () use ($app, $db) {
       'code' => 404,
       'message' => 'No se ha podido crear el usuario'
     ) ;
-        if ($sentencia == 1) {
+        if ($sentencia->rowCount() == 1) {
             $_SESSION['autorizado'] = true;
             $resultado = array(
         'status'=> 'success',
@@ -161,7 +161,7 @@ $app->post('/update', function () use ($app, $db) {
       'code' => 404,
       'message' => 'No se ha actualizar el usuario'
     ) ;
-            if ($actualizacion == 1) {
+            if ($actualizacion->rowCount() == 1) {
                 $_SESSION['autorizado'] = true;
                 $resultado = array(
         'status'=> 'success',
